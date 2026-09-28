@@ -8,6 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- Added this repo (repo-audit itself) to the checklist's own data — it didn't exist at the time of the original scan
 - `repo-audit.html`: a checklist artifact auditing every repo under
   `~/projects` plus the dotfiles repo against a best-practice standard
   (clean tree, named branch, `main`, configured origin), with per-repo
