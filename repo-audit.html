@@ -1,0 +1,1164 @@
+<title>Repo Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+<style>
+  :root {
+    --paper: #f5f4ef;
+    --surface: #ffffff;
+    --ink: #17191a;
+    --muted: #6b6f66;
+    --line: #dedacf;
+    --pine: #2f5d52;
+    --pine-soft: #e4ede9;
+    --rust: #a6572e;
+    --rust-soft: #f5e7dc;
+    --flag: #a6342e;
+    --flag-soft: #f6e4e1;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #15171a;
+      --surface: #1c1f1e;
+      --ink: #edebe3;
+      --muted: #9ba096;
+      --line: #33352e;
+      --pine: #6fae9c;
+      --pine-soft: #1e2c28;
+      --rust: #db8e5c;
+      --rust-soft: #2e2419;
+      --flag: #e28884;
+      --flag-soft: #2e1e1d;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #15171a;
+    --surface: #1c1f1e;
+    --ink: #edebe3;
+    --muted: #9ba096;
+    --line: #33352e;
+    --pine: #6fae9c;
+    --pine-soft: #1e2c28;
+    --rust: #db8e5c;
+    --rust-soft: #2e2419;
+    --flag: #e28884;
+    --flag-soft: #2e1e1d;
+    color-scheme: dark;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family:
+      "IBM Plex Sans",
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+    padding: 0 16px;
+    padding-block: 40px;
+  }
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  .mono {
+    font-family:
+      "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  header {
+    margin-bottom: 28px;
+  }
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px;
+    text-wrap: balance;
+  }
+  .sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin: 0 0 20px;
+    max-width: 60ch;
+  }
+
+  .stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 14px;
+    min-width: 104px;
+    flex: 1 1 104px;
+  }
+  .stat .n {
+    font-family: "IBM Plex Mono", monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+  .stat .l {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+  .stat.pine .n {
+    color: var(--pine);
+  }
+  .stat.rust .n {
+    color: var(--rust);
+  }
+  .stat.flag .n {
+    color: var(--flag);
+  }
+
+  .toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+  }
+  #filter {
+    flex: 1 1 220px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  #filter::placeholder {
+    color: var(--muted);
+  }
+  #filter:focus {
+    outline: 2px solid var(--pine);
+    outline-offset: 1px;
+  }
+  .reset-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 6px 4px;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .reset-btn:hover {
+    color: var(--ink);
+  }
+
+  .fixall-btn {
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--rust);
+    background: var(--rust-soft);
+    border: none;
+    border-radius: 7px;
+    padding: 8px 13px;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .fixall-btn:hover {
+    filter: brightness(0.95);
+  }
+  .fixall-btn.copied {
+    color: var(--pine);
+    background: var(--pine-soft);
+  }
+  .fixall-status {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  section.panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 28px;
+  }
+  .panel-head {
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--line);
+  }
+  .panel-head h2 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 2px;
+  }
+  .panel-head p {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: 0;
+  }
+
+  ul.rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  li.row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+  li.row:last-child {
+    border-bottom: none;
+  }
+  li.row.hidden {
+    display: none;
+  }
+
+  .cb {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--line);
+    border-radius: 5px;
+    margin-top: 2px;
+    flex: 0 0 18px;
+    cursor: pointer;
+    position: relative;
+    background: var(--surface);
+  }
+  .cb:checked {
+    background: var(--pine);
+    border-color: var(--pine);
+  }
+  .cb:checked::after {
+    content: "";
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 5px;
+    height: 9px;
+    border: solid var(--surface);
+    border-width: 0 2px 2px 0;
+    transform: rotate(40deg);
+  }
+  .cb:focus-visible {
+    outline: 2px solid var(--pine);
+    outline-offset: 2px;
+  }
+
+  .row-main {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .row-name {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 13.5px;
+    font-weight: 500;
+    word-break: break-word;
+  }
+  .row-remote {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+    word-break: break-word;
+  }
+  li.row.checked .row-name {
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: var(--line);
+  }
+  li.row.checked {
+    background: var(--pine-soft);
+  }
+
+  .row-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex: 0 0 auto;
+  }
+  .pill {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: 99px;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .pill.dirty {
+    border-color: transparent;
+    background: var(--rust-soft);
+    color: var(--rust);
+    font-variant-numeric: tabular-nums;
+  }
+  .pill.noorigin {
+    border-color: transparent;
+    background: var(--flag-soft);
+    color: var(--flag);
+  }
+  .pill.ok {
+    border-color: transparent;
+    background: var(--pine-soft);
+    color: var(--pine);
+  }
+
+  .fix-toggle {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 11px;
+    color: var(--rust);
+    background: var(--rust-soft);
+    border: none;
+    border-radius: 99px;
+    padding: 2px 9px 2px 7px;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+  }
+  .fix-toggle:hover {
+    filter: brightness(0.95);
+  }
+  .fix-toggle::before {
+    content: "▸";
+    display: inline-block;
+    transition: transform 0.15s ease;
+    font-size: 9px;
+  }
+  .fix-toggle[aria-expanded="true"]::before {
+    transform: rotate(90deg);
+  }
+  .fix-toggle:focus-visible {
+    outline: 2px solid var(--rust);
+    outline-offset: 2px;
+  }
+
+  .fix-panel {
+    flex-basis: 100%;
+    width: 100%;
+    margin-top: 6px;
+    padding: 12px 14px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .fix-gap h3 {
+    font-size: 12.5px;
+    font-weight: 600;
+    margin: 0 0 2px;
+  }
+  .fix-gap .note {
+    font-size: 12px;
+    color: var(--muted);
+    margin: 0 0 6px;
+    max-width: 60ch;
+  }
+  .cmd {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 6px 6px 6px 10px;
+    margin-bottom: 5px;
+  }
+  .cmd:last-child {
+    margin-bottom: 0;
+  }
+  .cmd code {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 12px;
+    flex: 1 1 auto;
+    overflow-x: auto;
+    white-space: pre;
+    color: var(--ink);
+  }
+  .cmd code.comment {
+    color: var(--muted);
+    font-style: italic;
+  }
+  .copy-btn {
+    flex: 0 0 auto;
+    font-family: "IBM Plex Sans", sans-serif;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 3px 8px;
+    cursor: pointer;
+  }
+  .copy-btn:hover {
+    color: var(--ink);
+    border-color: var(--pine);
+  }
+  .copy-btn.copied {
+    color: var(--pine);
+    border-color: var(--pine);
+  }
+  .guidance {
+    font-size: 12.5px;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 8px 10px;
+    max-width: 65ch;
+  }
+
+  .flagged .panel-head {
+    background: var(--flag-soft);
+  }
+  .flagged {
+    border-color: var(--flag);
+  }
+  li.row.flag-item {
+    align-items: flex-start;
+  }
+  .flag-reason {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 3px;
+    max-width: 60ch;
+  }
+  li.row.checked .flag-reason {
+    color: var(--muted);
+  }
+
+  footer {
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    padding-top: 6px;
+  }
+
+  @media (max-width: 480px) {
+    li.row {
+      flex-wrap: wrap;
+    }
+    .row-meta {
+      flex-direction: row;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-left: 30px;
+    }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Repo Audit</h1>
+    <p class="sub">
+      Every git repository found under <span class="mono">~/projects</span>,
+      plus the dotfiles repo. Check each off as you confirm it's what you
+      expect. State is saved in this browser only.
+    </p>
+
+    <div class="stats">
+      <div class="stat pine">
+        <div class="n" id="statVerified">0/0</div>
+        <div class="l">Verified</div>
+      </div>
+      <div class="stat pine">
+        <div class="n" id="statStandard">0/0</div>
+        <div class="l">Meets standard</div>
+      </div>
+      <div class="stat rust">
+        <div class="n" id="statDirty">0</div>
+        <div class="l">Uncommitted</div>
+      </div>
+      <div class="stat">
+        <div class="n" id="statNoOrigin">0</div>
+        <div class="l">No origin</div>
+      </div>
+      <div class="stat flag">
+        <div class="n" id="statFlagged">0/0</div>
+        <div class="l">Flagged resolved</div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <input
+        id="filter"
+        type="text"
+        placeholder="Filter by name, remote, or branch…"
+        autocomplete="off"
+      />
+      <button class="fixall-btn" id="fixAllBtn" type="button">
+        Copy all fix commands
+      </button>
+      <span class="fixall-status" id="fixAllStatus"></span>
+      <button class="reset-btn" id="resetBtn" type="button">
+        Clear all checks
+      </button>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>All repositories</h2>
+      <p>
+        40 repos — 39 under <span class="mono">~/projects</span>, plus the
+        dotfiles repo. Check one off once its remote, branch, and status look
+        right. The pills on the right show the current branch, how many
+        uncommitted changes it has, and whether it has no configured origin. A
+        repo not on a clean, named <span class="mono">main</span> branch with a
+        configured origin gets a <span class="mono">▸ Fix</span> button — open
+        it for the exact commands to close that gap.
+      </p>
+    </div>
+    <ul class="rows" id="mainList"></ul>
+  </section>
+
+  <section class="panel flagged">
+    <div class="panel-head">
+      <h2>Flagged for review</h2>
+      <p>
+        Specific things worth a closer look before treating the list above as
+        settled.
+      </p>
+    </div>
+    <ul class="rows" id="flagList"></ul>
+  </section>
+
+  <footer>
+    Generated from a local scan on 2026&#8209;09&#8209;28. Re-run the scan if
+    repos have moved since.
+  </footer>
+</div>
+
+<script>
+  (function () {
+    "use strict";
+
+    var mainRepos = [
+      { n: "ABS-scaling", r: "wileym-notboney/ABS-scaling", b: "master", d: 1 },
+      { n: "ansible", r: "wileym-notboney/ansible", b: "master", d: 0 },
+      {
+        n: "awesome-3d-printing",
+        r: "wileym-notboney/awesome-3d-printing",
+        b: "main",
+        d: 0,
+      },
+      {
+        n: "awesome-claude-code-subagents",
+        r: "VoltAgent/awesome-claude-code-subagents",
+        b: "main",
+        d: 1,
+      },
+      { n: "career-ops", r: "santifer/career-ops", b: "detached HEAD", d: 2 },
+      {
+        n: "compose-library",
+        r: "wileym-notboney/compose-library",
+        b: "main",
+        d: 2,
+      },
+      { n: "HALos", r: null, b: "master", d: 26 },
+      {
+        n: "halos-hub",
+        r: "wileym-notboney/halos-hub",
+        b: "claude/repo-review-questions-39gviw",
+        d: 0,
+      },
+      {
+        n: "hermes-help-desk",
+        r: "wileym-notboney/hermes-help-desk",
+        b: "main",
+        d: 1,
+      },
+      { n: "hermes-multi-agent-workflow", r: null, b: "main", d: 0 },
+      { n: "hermes-webui", r: "nesquena/hermes-webui", b: "master", d: 0 },
+      {
+        n: "homelab/proxmox-templates",
+        r: "wileym-notboney/homelab-proxmox-templates",
+        b: "master",
+        d: 0,
+      },
+      {
+        n: "hue-jay-sync-server",
+        r: "wileym-notboney/hue-jay-sync-server",
+        b: "main",
+        d: 0,
+      },
+      {
+        n: "learning/intro_programming",
+        r: "ehmatthes/intro_programming",
+        b: "master",
+        d: 0,
+      },
+      { n: "learning/mcp", r: null, b: "main", d: 8 },
+      {
+        n: "learning/python",
+        r: "wileym-notboney/learning-python",
+        b: "main",
+        d: 1,
+      },
+      { n: "llama-fs", r: "iyaja/llama-fs", b: "main", d: 0 },
+      { n: "llm-skills-forge", r: null, b: "Main", d: 11 },
+      {
+        n: "lovelace-htc-flipclock-weather",
+        r: "iamBiB/lovelace-htc-flipclock-weather",
+        b: "master",
+        d: 0,
+      },
+      {
+        n: "MCP/forgejo-mcp-server",
+        r: "nsvk13/forgejo-mcp-server",
+        b: "main",
+        d: 1,
+      },
+      {
+        n: "MCP/manyfold-mcp-server",
+        r: "wileym-notboney/manyfold-mcp-server",
+        b: "main",
+        d: 0,
+      },
+      { n: "MCP/mcp-speak", r: "fellowgeek/mcp-speak", b: "main", d: 0 },
+      {
+        n: "md-worksheets",
+        r: "wileym-notboney/learn-markdown-git",
+        b: "main",
+        d: 0,
+      },
+      { n: "mesh-fixer", r: null, b: "master", d: 0 },
+      {
+        n: "n8n/n8n-free-templates",
+        r: "wassupjay/n8n-free-templates",
+        b: "main",
+        d: 10,
+      },
+      { n: "n8n/n8n-workflows", r: "Zie619/n8n-workflows", b: "main", d: 92 },
+      { n: "office-design", r: null, b: "main", d: 1 },
+      {
+        n: "openscad/openscad-desings",
+        r: "wileym-notboney/openscad-desings",
+        b: "main",
+        d: 0,
+      },
+      { n: "pia-confmaker", r: null, b: "main", d: 2 },
+      { n: "scripts", r: "wileym-notboney/scripts", b: "master", d: 0 },
+      { n: "scripts-dev", r: null, b: "main", d: 4 },
+      { n: "shortcuts", r: null, b: "master", d: 8 },
+      { n: "shortcuts/wake-up-devil", r: null, b: "main", d: 5 },
+      {
+        n: "tailscale-policy",
+        r: "wileym-notboney/tailscale-policy",
+        b: "docktail-update",
+        d: 1,
+      },
+      {
+        n: "time-machine-gui",
+        r: "wileym-notboney/time-machine-gui",
+        b: "feat/write-actions",
+        d: 2,
+      },
+      { n: "tsidp", r: "tailscale/tsidp", b: "main", d: 0 },
+      {
+        n: "unifi-decoder",
+        r: "forgejo.tardisnology.i234.me/me/unifi-decoder",
+        b: "main",
+        d: 0,
+      },
+      { n: "xtouch-2u", r: "wileym-notboney/xtouch-2u", b: "main", d: 1 },
+      {
+        n: "~/.local/share/chezmoi",
+        r: "wileym-notboney/chezmoi-dotfiles",
+        b: "master",
+        d: 1,
+        group: "dotfiles",
+      },
+    ];
+
+    var flagged = [
+      {
+        n: "HALos/Projects/halos-hub",
+        reason:
+          "A second, independent clone of wileym-notboney/halos-hub, nested inside HALos at different commits than the top-level halos-hub. Same pattern as the scripts / scripts-dev split.",
+      },
+      {
+        n: "hue-jay-sync-server/.claude",
+        reason:
+          "A real, independent clone of solatis/claude-config sitting inside a .claude directory — not a submodule. git status in the parent repo won't show changes here.",
+      },
+      {
+        n: "pia-confmaker/.claude",
+        reason:
+          "Same situation as hue-jay-sync-server/.claude — an independent clone of solatis/claude-config nested inside .claude.",
+      },
+      {
+        n: "career-ops",
+        reason:
+          "Currently in detached HEAD — not on any branch. Easy to lose commits here if you commit without first checking out a branch.",
+      },
+      {
+        n: "n8n/n8n-workflows",
+        reason:
+          "92 uncommitted changes. Likely a fork you pull upstream updates into rather than commit to directly — worth confirming that's the intended workflow.",
+      },
+      {
+        n: "llm-skills-forge",
+        reason:
+          "Default branch is Main (capital M), not main — easy to typo against muscle memory.",
+      },
+      {
+        n: "hermes-webui",
+        reason:
+          "Origin is nesquena/hermes-webui, someone else's account, with no fork relationship visible locally. Check whether this was meant to be forked under your own account.",
+      },
+      {
+        n: "llama-fs",
+        reason:
+          "Origin is iyaja/llama-fs (someone else's account) — same question as hermes-webui.",
+      },
+      {
+        n: "lovelace-htc-flipclock-weather",
+        reason:
+          "Origin is iamBiB/lovelace-htc-flipclock-weather (someone else's account) — same question as hermes-webui.",
+      },
+      {
+        n: "MCP/mcp-speak",
+        reason:
+          "Origin is fellowgeek/mcp-speak (someone else's account) — same question as hermes-webui.",
+      },
+      {
+        n: "MCP/forgejo-mcp-server",
+        reason:
+          "Origin is nsvk13/forgejo-mcp-server (someone else's account) — same question as hermes-webui.",
+      },
+      {
+        n: "tsidp",
+        reason:
+          "Origin is tailscale/tsidp (Tailscale's own account) — same question as hermes-webui.",
+      },
+      {
+        n: "learning/intro_programming",
+        reason:
+          "Origin is ehmatthes/intro_programming (someone else's account) — same question as hermes-webui.",
+      },
+    ];
+
+    var STORE_MAIN = "repo-audit:verified:v1";
+    var STORE_FLAG = "repo-audit:resolved:v1";
+
+    function safeGet(key) {
+      try {
+        var raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : {};
+      } catch (e) {
+        return {};
+      }
+    }
+    function safeSet(key, obj) {
+      try {
+        localStorage.setItem(key, JSON.stringify(obj));
+      } catch (e) {}
+    }
+
+    var verified = safeGet(STORE_MAIN);
+    var resolved = safeGet(STORE_FLAG);
+
+    function el(tag, cls, text) {
+      var e = document.createElement(tag);
+      if (cls) e.className = cls;
+      if (text != null) e.textContent = text;
+      return e;
+    }
+
+    // --- best-practice standard -------------------------------------
+    // A repo meets it when: the working tree is clean, it's on a branch
+    // (not detached), that branch is named "main", and it has a
+    // configured origin. gapsFor() returns what's missing, each with the
+    // exact commands to close it, computed from that repo's own data.
+
+    var DEFAULT_OWNER = "wileym-notboney";
+
+    function isGithub(remote) {
+      if (!remote) return false;
+      var first = remote.split("/")[0];
+      return first.indexOf(".") === -1;
+    }
+
+    function lastSegment(path) {
+      var parts = path.split("/");
+      return parts[parts.length - 1];
+    }
+
+    function gapsFor(repo) {
+      var gaps = [];
+
+      if (repo.d > 0) {
+        gaps.push({
+          title: repo.d + " uncommitted change" + (repo.d === 1 ? "" : "s"),
+          note: "Not automatically a problem — but worth a deliberate commit or discard, not something left to accumulate.",
+          cmds: [
+            "git status",
+            "git diff",
+            'git add -A && git commit -m "..."',
+            "# or, to discard instead:",
+            "git restore .",
+          ],
+        });
+      }
+
+      if (repo.b === "detached HEAD") {
+        gaps.push({
+          title: "Detached HEAD",
+          note: "Not on any branch — a commit made here is easy to lose. Get onto a named branch before committing anything.",
+          cmds: [
+            "git branch -a",
+            "git switch main   # or whichever branch this should be",
+          ],
+        });
+      } else if (repo.b !== "main") {
+        var cmds = ["git branch -m " + repo.b + " main"];
+        if (repo.r) {
+          cmds.push("git push -u origin main");
+          if (isGithub(repo.r)) {
+            cmds.push("gh repo edit " + repo.r + " --default-branch main");
+            cmds.push(
+              "# optional, once you're sure: git push origin --delete " +
+                repo.b,
+            );
+          }
+        }
+        gaps.push({
+          title: 'Default branch is "' + repo.b + '", not "main"',
+          note: "main is the current convention; renaming keeps this repo consistent with the others.",
+          cmds: cmds,
+        });
+      }
+
+      if (!repo.r) {
+        gaps.push({
+          title: "No configured origin",
+          note: "Fine for a repo that's deliberately local-only. Otherwise, add a remote so the work is backed up somewhere else.",
+          cmds: [
+            "git remote add origin git@github.com:" +
+              DEFAULT_OWNER +
+              "/" +
+              lastSegment(repo.n) +
+              ".git   # adjust the name if this guess is wrong",
+            "git push -u origin " +
+              (repo.b === "detached HEAD" ? "main" : repo.b),
+          ],
+        });
+      }
+
+      return gaps;
+    }
+
+    function copyBtn(text) {
+      var btn = el("button", "copy-btn", "Copy");
+      btn.type = "button";
+      btn.addEventListener("click", function () {
+        function mark() {
+          btn.textContent = "Copied";
+          btn.classList.add("copied");
+          setTimeout(function () {
+            btn.textContent = "Copy";
+            btn.classList.remove("copied");
+          }, 1400);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(mark, function () {
+            fallbackSelect(text);
+          });
+        } else {
+          fallbackSelect(text);
+        }
+      });
+      return btn;
+    }
+
+    function fallbackSelect(text) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try {
+        document.execCommand("copy");
+      } catch (e) {}
+      document.body.removeChild(ta);
+    }
+
+    function repoPath(repo) {
+      return repo.n.charAt(0) === "~" ? repo.n : "~/projects/" + repo.n;
+    }
+
+    function buildAllCommandsScript() {
+      var sections = [];
+      var repoCount = 0;
+      var cmdCount = 0;
+      mainRepos.forEach(function (repo) {
+        var gaps = gapsFor(repo);
+        if (!gaps.length) return;
+        repoCount++;
+        var lines = ["# " + repo.n, "cd " + repoPath(repo)];
+        gaps.forEach(function (gap) {
+          lines.push("# -- " + gap.title + " --");
+          gap.cmds.forEach(function (c) {
+            lines.push(c);
+            if (c.trim().charAt(0) !== "#") cmdCount++;
+          });
+        });
+        sections.push(lines.join("\n"));
+      });
+      return {
+        text: sections.join("\n\n"),
+        repoCount: repoCount,
+        cmdCount: cmdCount,
+      };
+    }
+
+    function buildFixPanel(gaps) {
+      var panel = el("div", "fix-panel");
+      panel.hidden = true;
+      gaps.forEach(function (gap) {
+        var block = el("div", "fix-gap");
+        block.appendChild(el("h3", null, gap.title));
+        block.appendChild(el("p", "note", gap.note));
+        gap.cmds.forEach(function (line) {
+          var isComment = line.trim().charAt(0) === "#";
+          var row = el("div", "cmd");
+          var code = el("code", isComment ? "comment" : null, line);
+          row.appendChild(code);
+          if (!isComment) row.appendChild(copyBtn(line));
+          block.appendChild(row);
+        });
+        panel.appendChild(block);
+      });
+      return panel;
+    }
+
+    function buildMainRow(repo, idx) {
+      var id = "m" + idx;
+      var li = el("li", "row");
+      li.dataset.search = (
+        repo.n +
+        " " +
+        (repo.r || "") +
+        " " +
+        repo.b
+      ).toLowerCase();
+
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.className = "cb";
+      cb.id = id;
+      cb.checked = !!verified[repo.n];
+      if (cb.checked) li.classList.add("checked");
+      cb.addEventListener("change", function () {
+        if (cb.checked) {
+          verified[repo.n] = true;
+          li.classList.add("checked");
+        } else {
+          delete verified[repo.n];
+          li.classList.remove("checked");
+        }
+        safeSet(STORE_MAIN, verified);
+        renderStats();
+      });
+
+      var main = el("div", "row-main");
+      var label = document.createElement("label");
+      label.setAttribute("for", id);
+      label.className = "row-name";
+      label.textContent = repo.n;
+      var remote = el("div", "row-remote", repo.r || "no origin");
+      main.appendChild(label);
+      main.appendChild(remote);
+
+      var meta = el("div", "row-meta");
+      meta.appendChild(el("span", "pill", repo.b));
+      if (repo.d > 0) {
+        meta.appendChild(el("span", "pill dirty", repo.d + " uncommitted"));
+      }
+      if (!repo.r) {
+        meta.appendChild(el("span", "pill noorigin", "no origin"));
+      }
+
+      var gaps = gapsFor(repo);
+      var panel = null;
+      if (gaps.length) {
+        var toggle = el("button", "fix-toggle", "Fix");
+        toggle.type = "button";
+        toggle.setAttribute("aria-expanded", "false");
+        panel = buildFixPanel(gaps);
+        toggle.addEventListener("click", function () {
+          var open = panel.hidden;
+          panel.hidden = !open;
+          toggle.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+        meta.appendChild(toggle);
+      } else {
+        meta.appendChild(el("span", "pill ok", "meets standard"));
+      }
+
+      li.appendChild(cb);
+      li.appendChild(main);
+      li.appendChild(meta);
+      if (panel) li.appendChild(panel);
+      return li;
+    }
+
+    function buildFlagRow(item, idx) {
+      var id = "f" + idx;
+      var li = el("li", "row flag-item");
+
+      var cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.className = "cb";
+      cb.id = id;
+      cb.checked = !!resolved[item.n];
+      if (cb.checked) li.classList.add("checked");
+      cb.addEventListener("change", function () {
+        if (cb.checked) {
+          resolved[item.n] = true;
+          li.classList.add("checked");
+        } else {
+          delete resolved[item.n];
+          li.classList.remove("checked");
+        }
+        safeSet(STORE_FLAG, resolved);
+        renderStats();
+      });
+
+      var main = el("div", "row-main");
+      var label = document.createElement("label");
+      label.setAttribute("for", id);
+      label.className = "row-name";
+      label.textContent = item.n;
+      var reason = el("div", "flag-reason", item.reason);
+      main.appendChild(label);
+      main.appendChild(reason);
+
+      li.appendChild(cb);
+      li.appendChild(main);
+      return li;
+    }
+
+    var mainListEl = document.getElementById("mainList");
+    var flagListEl = document.getElementById("flagList");
+
+    mainRepos.forEach(function (repo, i) {
+      mainListEl.appendChild(buildMainRow(repo, i));
+    });
+    flagged.forEach(function (item, i) {
+      flagListEl.appendChild(buildFlagRow(item, i));
+    });
+
+    function renderStats() {
+      document.getElementById("statVerified").textContent =
+        Object.keys(verified).length + "/" + mainRepos.length;
+      document.getElementById("statStandard").textContent =
+        mainRepos.filter(function (r) {
+          return gapsFor(r).length === 0;
+        }).length +
+        "/" +
+        mainRepos.length;
+      document.getElementById("statDirty").textContent = mainRepos.filter(
+        function (r) {
+          return r.d > 0;
+        },
+      ).length;
+      document.getElementById("statNoOrigin").textContent = mainRepos.filter(
+        function (r) {
+          return !r.r;
+        },
+      ).length;
+      document.getElementById("statFlagged").textContent =
+        Object.keys(resolved).length + "/" + flagged.length;
+    }
+    renderStats();
+
+    document.getElementById("filter").addEventListener("input", function (e) {
+      var q = e.target.value.trim().toLowerCase();
+      var rows = mainListEl.querySelectorAll("li.row");
+      rows.forEach(function (row) {
+        row.classList.toggle(
+          "hidden",
+          q.length > 0 && row.dataset.search.indexOf(q) === -1,
+        );
+      });
+    });
+
+    document.getElementById("fixAllBtn").addEventListener("click", function () {
+      var btn = document.getElementById("fixAllBtn");
+      var status = document.getElementById("fixAllStatus");
+      var script = buildAllCommandsScript();
+      if (!script.repoCount) {
+        status.textContent = "Nothing to fix — every repo meets the standard.";
+        return;
+      }
+      function mark() {
+        btn.textContent = "Copied";
+        btn.classList.add("copied");
+        status.textContent =
+          script.cmdCount +
+          " command" +
+          (script.cmdCount === 1 ? "" : "s") +
+          " for " +
+          script.repoCount +
+          " repo" +
+          (script.repoCount === 1 ? "" : "s") +
+          " — paste and review before running.";
+        setTimeout(function () {
+          btn.textContent = "Copy all fix commands";
+          btn.classList.remove("copied");
+        }, 1800);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(script.text).then(mark, function () {
+          fallbackSelect(script.text);
+          mark();
+        });
+      } else {
+        fallbackSelect(script.text);
+        mark();
+      }
+    });
+
+    document.getElementById("resetBtn").addEventListener("click", function () {
+      verified = {};
+      resolved = {};
+      safeSet(STORE_MAIN, verified);
+      safeSet(STORE_FLAG, resolved);
+      document.querySelectorAll(".cb").forEach(function (cb) {
+        cb.checked = false;
+        cb.closest("li.row").classList.remove("checked");
+      });
+      renderStats();
+    });
+  })();
+</script>
